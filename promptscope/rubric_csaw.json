@@ -50,6 +50,16 @@
       "action": "reject"
     },
     {
+      "pattern": "\\b(load|deploy|flash|program|install|drop|field)\\b.{0,40}\\b(trojan|backdoor|implant|malicious payload|rootkit)\\b",
+      "reason": "deploying a Trojan/implant onto a device is out of scope; the challenge inserts Trojans into the provided benchmark RTL and detects them, it does not field them on hardware",
+      "action": "reject"
+    },
+    {
+      "pattern": "\\b(train|optimi[sz]e|tune|improve|maximi[sz]e)\\b.{0,60}\\b(trojan|payload|implant|attack)\\b.{0,60}\\b(perform\\w*|effective\\w*|stealth\\w*|evade|evasion|undetect\\w*|potent)\\b",
+      "reason": "iteratively optimizing an attack's stealth or effectiveness is weaponization, outside the RTL design-and-detection scope; verify, document and detect the benchmark Trojan instead",
+      "action": "reject"
+    },
+    {
       "pattern": "\\b(homework|essay|girlfriend|boyfriend|joke|meme|recipe|movie|song lyrics|horoscope)\\b",
       "reason": "non-engineering / personal content",
       "action": "reject"
