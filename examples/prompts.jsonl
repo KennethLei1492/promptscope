@@ -1,0 +1,4 @@
+{"text": "Synthesize picorv32.v with Yosys for the iCE40 target and report LUT count and any warnings.", "source": "team-notes"}
+{"text": "hey can u make the riscv core work asap lol", "source": "team-notes"}
+{"text": "Lint all .v files in the rtl directory with verilator and list every warning grouped by file.", "source": "team-notes"}
+{"text": "write me an essay about the history of computers", "source": "team-notes"}

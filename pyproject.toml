@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "promptscope"
+version = "0.1.0"
+description = "Hybrid prompt-scope analyzer/editor with a parallel, looped pipeline. Backend-agnostic (Claude, OpenAI/Codex, local CLI)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Kenneth" }]
+keywords = ["prompt", "scope", "pipeline", "csaw", "rtl", "verilog", "llm"]
+dependencies = []  # standard library only
+
+[project.scripts]
+promptscope = "promptscope.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["promptscope"]
+
+[tool.setuptools.package-data]
+promptscope = ["rubric_csaw.json"]

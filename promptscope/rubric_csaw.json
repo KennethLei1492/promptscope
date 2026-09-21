@@ -1,0 +1,114 @@
+{
+  "name": "csaw-aha-2026",
+  "description": "Professional engineering scope for the CSAW AI Hardware Attack (AHA!) Challenge: RTL design/verification work on the competition-provided open-source designs using the OSS CAD Suite flow.",
+  "version": 1,
+
+  "domain_terms": {
+    "hardware": ["verilog", "systemverilog", "rtl", "hdl", "netlist", "module", "always", "posedge", "negedge",
+                 "register", "flip-flop", "fsm", "state machine", "datapath", "alu", "pipeline", "hazard",
+                 "cache", "bus", "axi", "wishbone", "uart", "spi", "i2c", "gpio", "clock", "reset", "wire", "reg",
+                 "assign", "testbench", "tb", "waveform", "vcd", "gtkwave", "lint", "synthesis", "synthesize",
+                 "place and route", "timing", "lut", "fpga", "asic", "gate", "soc", "cpu", "core", "riscv", "risc-v",
+                 "instruction", "decoder", "opcode", "csr", "memory-mapped", "mmio", "dma", "interrupt"],
+    "toolchain": ["yosys", "icarus", "iverilog", "vvp", "nextpnr", "icestorm", "icepack", "verilator", "sby",
+                  "symbiyosys", "openroad", "openlane", "surelog", "cocotb", "makefile", "oss cad suite", "ghdl"],
+    "competition": ["csaw", "aha", "hardware trojan", "trojan", "benchmark", "qualifier", "preliminary", "submission",
+                    "write-up", "writeup", "report", "deliverable", "rubric", "judges", "detection", "insertion",
+                    "stealth", "trigger", "payload", "functional equivalence", "equivalence check", "coverage"],
+    "engineering_verbs": ["implement", "design", "write", "generate", "refactor", "modify", "insert", "add", "remove",
+                          "verify", "simulate", "synthesize", "lint", "test", "debug", "analyze", "compare", "document",
+                          "measure", "instrument", "review", "explain", "summarize", "diff", "port", "optimize", "profile"]
+  },
+
+  "scoring": {
+    "hardware_weight": 0.45,
+    "toolchain_weight": 0.2,
+    "competition_weight": 0.15,
+    "verb_weight": 0.2,
+    "domain_blend": 0.65,
+    "structure_blend": 0.35,
+    "saturate_at": 2,
+    "accept_threshold": 0.6,
+    "escalate_threshold": 0.3,
+    "min_words": 6
+  },
+
+  "forbidden": [
+    {
+      "pattern": "\\b(real|production|deployed|live|commercial)\\b.{0,40}\\b(device|hardware|chip|board|system|network|server)s?\\b",
+      "reason": "targets real/deployed systems; the challenge is limited to the provided benchmark designs",
+      "action": "reject"
+    },
+    {
+      "pattern": "\\b(malware|ransomware|keylogger|botnet|phishing|credential|password dump|exfiltrat\\w+ (my|their|his|her)|ddos)\\b",
+      "reason": "software-attack / malware content is outside the hardware-design scope",
+      "action": "reject"
+    },
+    {
+      "pattern": "\\b(bypass|evade|defeat)\\b.{0,30}\\b(rules|judges|plagiarism|detector|policy)\\b",
+      "reason": "circumventing competition rules is out of scope",
+      "action": "reject"
+    },
+    {
+      "pattern": "\\b(homework|essay|girlfriend|boyfriend|joke|meme|recipe|movie|song lyrics|horoscope)\\b",
+      "reason": "non-engineering / personal content",
+      "action": "reject"
+    }
+  ],
+
+  "rewrites": [
+    {
+      "pattern": "(?i)\\b(make|get)\\s+(it|this|the code)\\s+(work|working|better|good|nice|clean)\\b",
+      "replacement": "make the module pass its testbench and synthesize without warnings",
+      "reason": "vague success criterion replaced with a checkable one"
+    },
+    {
+      "pattern": "(?i)\\b(asap|urgent(ly)?|right now|quick(ly)?|hurry)\\b[,.!]?\\s*",
+      "replacement": "",
+      "reason": "removed urgency filler"
+    },
+    {
+      "pattern": "(?i)\\b(lol|lmao|haha+|omg|idk|tbh|pls|plz|u r|ur)\\b[,.!]?\\s*",
+      "replacement": "",
+      "reason": "removed informal slang"
+    },
+    {
+      "pattern": "(?i)\\bverilog code\\b",
+      "replacement": "Verilog RTL",
+      "reason": "standard terminology"
+    },
+    {
+      "pattern": "(?i)\\b(the )?test bench\\b",
+      "replacement": "testbench",
+      "reason": "standard terminology"
+    },
+    {
+      "pattern": "(?i)!{2,}",
+      "replacement": ".",
+      "reason": "removed exclamation emphasis"
+    }
+  ],
+
+  "quality_checks": [
+    {
+      "id": "has_target",
+      "pattern": "(?i)(\\b\\w+\\.s?v\\b|\\bmodule\\s+\\w+|\\b(the|this|in)\\s+\\w+\\s+(module|core|block|unit|design|testbench|file)\\b)",
+      "missing_reason": "does not name a target file/module; specify e.g. 'in alu.v' or 'module fetch_stage'",
+      "severity": 0.15
+    },
+    {
+      "id": "has_deliverable",
+      "pattern": "(?i)\\b(return|output|produce|provide|give|show|list|write|generate|emit|report|diff|patch)\\b",
+      "missing_reason": "does not state the expected deliverable (patch, diff, file, report, list)",
+      "severity": 0.1
+    },
+    {
+      "id": "has_constraint",
+      "pattern": "(?i)\\b(must|should|without|keep|preserve|maintain|do not|don't|no more than|at most|within|constraint|equivalent)\\b",
+      "missing_reason": "no constraints stated (e.g. 'preserve functional equivalence', 'no new top-level ports')",
+      "severity": 0.1
+    }
+  ],
+
+  "llm_scope_statement": "The engineering scope is the CSAW 2026 AI Hardware Attack (AHA!) Challenge: analysis, modification, verification, synthesis and documentation of the competition-provided open-source RTL designs (Verilog/SystemVerilog) using the OSS CAD Suite flow (Yosys, Icarus Verilog, nextpnr/IceStorm, Verilator, cocotb) on macOS arm64. In-scope prompts request concrete, checkable hardware-engineering work on those benchmark designs and the team's write-up/submission. Out of scope: anything targeting real or deployed hardware/networks, software malware, circumventing competition rules, or non-engineering content. A professional prompt names its target (file/module), states the deliverable, states constraints, and uses standard terminology with no slang or urgency filler."
+}
