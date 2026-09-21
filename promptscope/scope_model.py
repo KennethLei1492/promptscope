@@ -42,7 +42,53 @@ Respond with ONLY a JSON object, no prose, no code fences:
   "reasons": ["short reason", ...],
   "rewritten": "<rewritten prompt or null>"}}"""
 
-_JSON_RE = re.compile(r"\{.*\}", re.DOTALL)
+_FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
+
+
+def extract_json_object(raw: str) -> Optional[dict]:
+    """Pull the verdict object out of an LLM reply that may wrap it in prose or a
+    ```json fence, or precede it with other braces. Tries, in order:
+      1. a fenced ```json {...}``` block,
+      2. each balanced {...} span, newest first, that parses and has "decision",
+      3. the whole string.
+    Returns the parsed dict, or None if nothing usable is found.
+    """
+    if not raw:
+        return None
+
+    def _load(s: str) -> Optional[dict]:
+        try:
+            obj = json.loads(s)
+            return obj if isinstance(obj, dict) else None
+        except (ValueError, TypeError):
+            return None
+
+    m = _FENCE_RE.search(raw)
+    if m:
+        obj = _load(m.group(1))
+        if obj is not None:
+            return obj
+
+    # Scan for balanced top-level {...} spans; prefer the last one containing "decision".
+    spans, depth, start = [], 0, -1
+    for i, ch in enumerate(raw):
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}" and depth > 0:
+            depth -= 1
+            if depth == 0 and start >= 0:
+                spans.append(raw[start:i + 1])
+    for span in reversed(spans):
+        obj = _load(span)
+        if obj is not None and "decision" in obj:
+            return obj
+    for span in reversed(spans):
+        obj = _load(span)
+        if obj is not None:
+            return obj
+    return _load(raw.strip())
 
 
 class PromptScopeModel:
@@ -63,14 +109,15 @@ class PromptScopeModel:
         return f"{notes}PROMPT:\n{item.text}"
 
     def parse_llm(self, raw: str) -> Verdict:
-        m = _JSON_RE.search(raw or "")
-        if not m:
-            return Verdict(Decision.REJECT, 0.0, ["LLM returned no JSON"], source=f"llm:{self.backend.name}")
+        data = extract_json_object(raw)
+        if data is None:
+            return Verdict(Decision.REJECT, 0.0, ["LLM returned no parseable JSON verdict"],
+                           source=f"llm:{self.backend.name}")
         try:
-            data = json.loads(m.group(0))
             decision = Decision(str(data.get("decision", "reject")).lower())
-        except (ValueError, TypeError) as exc:
-            return Verdict(Decision.REJECT, 0.0, [f"LLM JSON invalid: {exc}"], source=f"llm:{self.backend.name}")
+        except ValueError:
+            return Verdict(Decision.REJECT, 0.0, [f"LLM gave unknown decision {data.get('decision')!r}"],
+                           source=f"llm:{self.backend.name}")
         if decision == Decision.ESCALATE:      # the LLM may not punt back
             decision = Decision.REJECT
         score = float(data.get("score", 0.0))
@@ -119,7 +166,21 @@ class PromptScopeModel:
             if lv.decision == Decision.ACCEPT:
                 item.final = lv
                 return item
-            # REWRITE -> loop: re-validate the new text with the rules
+            if lv.decision == Decision.REWRITE:
+                # Trust a confident model rewrite instead of looping the rules'
+                # keyword checks over it until the iteration budget runs out.
+                escalate_t = float(self.rules.scoring.get("escalate_threshold", 0.3))
+                if lv.score >= escalate_t:
+                    check = self.rules.evaluate(item.text)
+                    changed = item.text != item.original
+                    tag = ("validated by rules" if check.decision == Decision.ACCEPT
+                           else "accepted model rewrite")
+                    item.final = Verdict(
+                        Decision.REWRITE if changed else Decision.ACCEPT,
+                        max(check.score, lv.score), lv.reasons + [tag],
+                        rewritten=item.text if changed else None, source="merge")
+                    return item
+                # low-confidence rewrite: loop for another pass
         item.final = Verdict(Decision.REJECT, item.last.score if item.last else 0.0,
                              [f"exceeded {max_iterations} iterations"], source="merge")
         return item

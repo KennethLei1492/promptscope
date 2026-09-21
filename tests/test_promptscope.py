@@ -82,6 +82,44 @@ def test_pipeline_runs_and_loops():
         assert it.final is not None
 
 
+def test_json_extractor_tolerates_fences_and_prose():
+    from promptscope.scope_model import extract_json_object as x
+    fenced = "Sure:\n```json\n{\"decision\":\"rewrite\",\"score\":0.8,\"rewritten\":\"z\"}\n```"
+    assert x(fenced)["decision"] == "rewrite"
+    # braces in prose before the real object must not break parsing
+    assert x('The {vague} prompt. {\"decision\":\"reject\",\"score\":0.1}')["decision"] == "reject"
+    assert x("no json here") is None
+
+
+class _BareRewriteBackend:
+    """Returns a valid rewrite that omits any constraint keyword, so the rules'
+    has_constraint check would fail on re-validation."""
+    name = "bare"
+
+    def __init__(self):
+        self.calls = 0
+
+    def complete(self, system, user):
+        self.calls += 1
+        return '{"decision":"rewrite","score":0.78,"reasons":["needs a target"],' \
+               '"rewritten":"Identify the uart module file and debug it; return a unified diff."}'
+
+
+def test_confident_llm_rewrite_is_not_rejected():
+    from promptscope import PromptScopeModel, build_default_pipeline
+    backend = _BareRewriteBackend()
+    m = PromptScopeModel(backend=backend)
+    # pipeline path
+    pipe = build_default_pipeline(m, workers=1, llm_workers=1, max_iterations=3)
+    result = pipe.run([PromptItem(text="debug the uart module")], timeout=30)[0]
+    assert result.final.decision == Decision.REWRITE
+    assert result.text != result.original
+    # sync path agrees
+    item = m.analyze("debug the uart module")
+    assert item.final.decision == Decision.REWRITE
+    assert item.final.rewritten
+
+
 def test_forbidden_never_reaches_llm():
     calls_before = get_backend("mock")
     m = PromptScopeModel(backend=calls_before)

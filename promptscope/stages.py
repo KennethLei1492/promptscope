@@ -80,21 +80,40 @@ def make_review(model):
 
 # 5. validate (+ loop decision) -------------------------------------------
 def make_validate(model):
+    escalate_t = float(model.rules.scoring.get("escalate_threshold", 0.3))
+
     def validate(item: PromptItem, ctx: PipelineContext) -> Route:
         last = item.last
         check = model.rules.evaluate(item.text)
+        changed = item.text != item.original
+
+        # 1. The current text passes the rules cleanly -> done.
         if check.decision == Decision.ACCEPT:
-            # rewritten (or original) text now passes the rules cleanly
             item.final = Verdict(
-                Decision.REWRITE if item.text != item.original else Decision.ACCEPT,
+                Decision.REWRITE if changed else Decision.ACCEPT,
                 score=max(check.score, last.score if last else 0.0),
                 reasons=(last.reasons if last else []) + ["validated by rules"],
-                rewritten=item.text if item.text != item.original else None,
+                rewritten=item.text if changed else None,
                 source="merge",
             )
             return "emit"
-        # still not clean: loop back if budget remains, otherwise escalate once
-        # to the LLM, and finally give up.
+
+        # 2. The model returned a rewrite it was confident in -> trust it instead of
+        #    re-imposing the rules' keyword checks on the model's finished work and
+        #    looping into a reject. The rules gate raw prompts, not model rewrites.
+        if (last is not None and last.source.startswith("llm:")
+                and last.decision == Decision.REWRITE and changed
+                and last.score >= escalate_t):
+            item.final = Verdict(
+                Decision.REWRITE,
+                score=max(check.score, last.score),
+                reasons=last.reasons + ["accepted model rewrite"],
+                rewritten=item.text,
+                source="merge",
+            )
+            return "emit"
+
+        # 3. Otherwise keep improving within the loop budget, then give up.
         item.iteration += 1
         if item.iteration < ctx.max_iterations:
             if check.decision == Decision.REWRITE:
