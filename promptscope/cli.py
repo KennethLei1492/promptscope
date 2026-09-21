@@ -2,7 +2,7 @@
 
     python -m promptscope "insert a bug in the alu"                 # one prompt, mock backend
     python -m promptscope -f prompts.txt --backend openai --model gpt-4o-mini
-    python -m promptscope -f prompts.jsonl --backend anthropic --model claude-sonnet-4-5 --jsonl out.jsonl
+    python -m promptscope -f prompts.jsonl --backend anthropic --model claude-sonnet-5 --jsonl out.jsonl
     python -m promptscope -f prompts.txt --backend subprocess --cmd "codex exec -"
     python -m promptscope -f prompts.txt --backend openai --base-url http://localhost:11434/v1 --model llama3.1
 

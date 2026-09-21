@@ -42,7 +42,7 @@ The scoping logic is broken into independent **stages**. Each stage owns its own
 ```python
 from promptscope import PromptScopeModel, build_default_pipeline, get_backend, PromptItem
 
-model = PromptScopeModel(backend=get_backend("anthropic", model="claude-sonnet-4-5"))
+model = PromptScopeModel(backend=get_backend("anthropic", model="claude-sonnet-5"))
 pipe  = build_default_pipeline(model, workers=4, llm_workers=2, max_iterations=3)
 results = pipe.run([PromptItem(text=p) for p in prompts])
 for item in results:
@@ -84,7 +84,7 @@ python -m promptscope -f examples/prompts.txt --backend openai \
 
 # Claude, writing full results to JSON Lines
 python -m promptscope -f examples/prompts.jsonl --backend anthropic \
-    --model claude-sonnet-4-5 --jsonl out.jsonl
+    --model claude-sonnet-5 --jsonl out.jsonl
 ```
 
 To add a backend, write a class with a `complete(system, user)` method and register it in `BACKENDS` in `promptscope/llm.py`.

@@ -24,6 +24,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import urllib.error
 import urllib.request
@@ -52,7 +53,7 @@ def _post_json(url: str, headers: dict, payload: dict, timeout: float) -> dict:
 class AnthropicBackend:
     name = "anthropic"
 
-    def __init__(self, model: str = "claude-sonnet-4-5", api_key: Optional[str] = None,
+    def __init__(self, model: str = "claude-sonnet-5", api_key: Optional[str] = None,
                  base_url: Optional[str] = None, max_tokens: int = 1024, timeout: float = 60.0):
         self.model = model
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
@@ -124,8 +125,14 @@ class SubprocessBackend:
         self.cwd = cwd
 
     def complete(self, system: str, user: str) -> str:
+        argv = shlex.split(self.cmd, posix=(os.name != "nt"))
+        # On Windows, npm-installed CLIs (codex, claude) are .cmd shims that
+        # CreateProcess can only launch by their resolved path.
+        resolved = shutil.which(argv[0])
+        if resolved:
+            argv[0] = resolved
         proc = subprocess.run(
-            shlex.split(self.cmd), input=f"{system}\n\n{user}", capture_output=True,
+            argv, input=f"{system}\n\n{user}", capture_output=True,
             text=True, timeout=self.timeout, cwd=self.cwd,
         )
         if proc.returncode != 0:

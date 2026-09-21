@@ -92,14 +92,14 @@ Mac:
 
 ```
 export ANTHROPIC_API_KEY="paste-your-key-here"
-python3 -m promptscope -f my_prompts.txt --backend anthropic --model claude-sonnet-4-5
+python3 -m promptscope -f my_prompts.txt --backend anthropic --model claude-sonnet-5
 ```
 
 Windows (PowerShell):
 
 ```
 $env:ANTHROPIC_API_KEY="paste-your-key-here"
-python -m promptscope -f my_prompts.txt --backend anthropic --model claude-sonnet-4-5
+python -m promptscope -f my_prompts.txt --backend anthropic --model claude-sonnet-5
 ```
 
 **OpenAI / Codex.** Create a key at [platform.openai.com](https://platform.openai.com/api-keys). Same two lines, but with `OPENAI_API_KEY` in the first and `--backend openai --model gpt-4o-mini` in the second. If you use the Codex command-line app instead, no key is needed: add `--backend subprocess --cmd "codex exec -"` to the command.
