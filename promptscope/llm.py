@@ -136,7 +136,12 @@ class SubprocessBackend:
             text=True, timeout=self.timeout, cwd=self.cwd,
         )
         if proc.returncode != 0:
-            raise RuntimeError(f"{self.cmd!r} exited {proc.returncode}: {proc.stderr[:500]}")
+            # Many CLIs print their real error to stdout, not stderr, so show both.
+            detail = (proc.stderr or "").strip() or (proc.stdout or "").strip()
+            if not detail:
+                detail = ("no output — the tool likely isn't signed in or configured. "
+                          f"Run `{argv[0]}` on its own once to check.")
+            raise RuntimeError(f"{self.cmd!r} exited {proc.returncode}: {detail[:800]}")
         return proc.stdout
 
 
